@@ -1,111 +1,72 @@
-#include <SPI.h>
-#include <SD.h>
+// comunicação I2C e para o RTC.
 #include <Wire.h>
-#include <RTClib.h> // Biblioteca do RTC
+#include <RTClib.h>
 
-#define SD_CS 5 // Pino do SD
-#define SENSOR_PIN 34 // Pino do ADS
-#define n_leituras 10 // Nº de dados armazenados
+// objeto "rtc" para módulo DS3231.
+RTC_DS3231 rtc;
 
-float leituras[n_leituras]; 
-int quantidadeLeituras = 0;
-
-RTC_DS3231 rtc; // Objeto do RTC
-String horarioAtual = ""; // Para armazenar data/hora formatada
-
-// Função de reinício do ESP
-void reiniciarESP() {
-  Serial.println("Erro crítico. Reiniciando ESP32 em 5 segundos...");
-  delay(5000);
-  // Criar limite de reinícios e aviso de erro com log.
-  ESP.restart();
-}
+// Array para dia da semana em texto.
+char diasDaSemana[7][15] = {"Domingo", "Segunda-feira", "Terca-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sabado"};
 
 void setup() {
+  // Inicia a comunicação Serial para podermos ver as informações no Monitor Serial.
   Serial.begin(115200);
-  Wire.begin();
+  delay(1000); // Uma pequena pausa para garantir que o Monitor Serial esteja pronto.
 
+  // Tenta iniciar a comunicação com o módulo RTC.
   if (!rtc.begin()) {
-    Serial.println("Erro ao iniciar o RTC!");
-    reiniciarESP(); // Reinicia o ESP32
+    Serial.println("Nao foi possivel encontrar o RTC! Verifique as conexoes.");
+    while (1);
   }
-  // Criar ajuste de data/hora iniciais
+
   if (rtc.lostPower()) {
-    Serial.println("RTC perdeu o poder. Ajustando para a hora de compilação.");
+    Serial.println("RTC perdeu energia! Ajustando a hora com a do computador...");
+    // ajusta o RTC para a data e hora em que este código foi compilado.
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  } else {
+    Serial.println("RTC ja esta em funcionamento com a hora correta.");
   }
-
-  if (!SD.begin(SD_CS)) {
-    Serial.println("Falha na inicialização do SD!");
-    reiniciarESP();
-  }
-
-  Serial.println("RTC inicializado com sucesso");
-  Serial.println("Cartão SD inicializado com sucesso.");
-}
-
-// Função para simular várias leituras
-void realizarLeituras() {
-  quantidadeLeituras = 0; 
-
-  // Leitura do RTC em formato BR
-  DateTime now = rtc.now();
-  horarioAtual = String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " " +
-                 String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
-
-  // Leitura do ADC (Piranômetro exemplo)
-  int leituraADC = analogRead(SENSOR_PIN);
-  float tensao = (leituraADC / 4095.0) * 3.3; // Conversão Teórica
-  leituras[quantidadeLeituras++] = tensao;
-
-  // Leitura do sist. de Baterias
-  float baterias = 50.0 + random(-10, 10); // Valores teste (A ser substituído)
-  leituras[quantidadeLeituras++] = baterias;
-
-  // Leitura de Temperatura
-  float temperatura = 25.0 + random(-5, 5); // Valores teste (A ser substituído)
-  leituras[quantidadeLeituras++] = temperatura;
-
-  // Leitura de Umidade 
-  float umidade = 50.0 + random(-10, 10); // Valores teste (A ser substituído)
-  leituras[quantidadeLeituras++] = umidade;
-}
-
-// Função para salvar dados no SD
-void salvarDadosNoSD() {
-  // Criar checagem de armazenagem anterior
-
-  while (true) {
-    File dataFile = SD.open("/dados.csv", FILE_APPEND);
-    if (dataFile) {
-      dataFile.print(horarioAtual);
-      dataFile.print(","); 
-
-      for (int i = 0; i < quantidadeLeituras; i++) {
-        dataFile.print(leituras[i], 2);
-        if (i < quantidadeLeituras - 1) {
-          dataFile.print(",");
-        }
-      }
-      dataFile.println();
-      dataFile.close();
-      Serial.println("Dados salvos no cartão SD.");
-      break; 
-    } else {
-      Serial.println("Erro ao abrir o arquivo para escrita. Tentando novamente em 30 segundos...");
-      delay(30000); 
-      // Adicionar número máximo de tentativas, log de erro e chamada.
-    }
-  }
-}
-
-void uploadNuvem() {
-  // Lora
 }
 
 void loop() {
-  realizarLeituras();      // Simula coleta de dados
-  salvarDadosNoSD();       // Armazena no cartão SD
-  uploadNuvem();
-  delay(5000);             // Aguarda 5 segundos
+  // ---- FUNÇÃO PRINCIPAL: Ler a hora atual ----
+  // Pega todas as informações de data e hora atuais do RTC e armazena no objeto "agora".
+  DateTime agora = rtc.now();
+
+  // Imprime a data no formato DD/MM/AAAA
+  Serial.print("Data: ");
+  if (agora.day() < 10) Serial.print('0');
+  Serial.print(agora.day());
+  Serial.print('/');
+  if (agora.month() < 10) Serial.print('0');
+  Serial.print(agora.month());
+  Serial.print('/');
+  Serial.print(agora.year());
+  
+  // Imprime o dia da semana em texto
+  Serial.print(" (");
+  Serial.print(diasDaSemana[agora.dayOfTheWeek()]);
+  Serial.print(")");
+
+  // Imprime a hora no formato hh:mm:ss
+  Serial.print(" - Hora: ");
+  if (agora.hour() < 10) Serial.print('0');
+  Serial.print(agora.hour());
+  Serial.print(':');
+  if (agora.minute() < 10) Serial.print('0');
+  Serial.print(agora.minute());
+  Serial.print(':');
+  if (agora.second() < 10) Serial.print('0');
+  Serial.print(agora.second());
+  Serial.println();
+  
+  // ---- FUNÇÃO PRINCIPAL: Ler a temperatura ----
+  // O DS3231 possui um sensor de temperatura integrado.
+  Serial.print("Temperatura: ");
+  Serial.print(rtc.getTemperature());
+  Serial.println(" C");
+  Serial.println("---------------------------------------");
+
+  // Espera 3 segundos antes de ler e imprimir novamente.
+  delay(3000);
 }

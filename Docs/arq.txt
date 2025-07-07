@@ -1,0 +1,35 @@
+Configurar VS code para Arduino/Esp
+
+Bibliotecas:
+ - Platform I/O
+ - Material ICON Theme
+ - C++ Snippets Pro
+
+
+Sobre o ESP32:
+ - Pinos padronizados para comunicação SPI;
+ - ADC com resolução de 12 bits (0 a 4095)
+	0    -> 0V
+	4095 -> 3.3V
+ 	 - Existe ADC1 e ADC2, o ADC2 é instável e falha com o WIFI ligado.
+
+
+Estudar:
+ - Datasheet do ADC + biblioteca para ele
+ - Estudar piranômetro (quais as saídas, o que o esp vai receber) e armazenar
+ - RTC, estudar biblioteca e pensar como implementá-lo
+ - SD Card, estudar biblioteca dele, basicamente
+ - Estudar como usar o platform IO para programar e enviar o programa
+   para o MC.
+
+https://wokwi.com/projects/427410491152350209
+
+Dispositivos:
+ - ESP32
+ - ADC -> ADS1232 ou ADS 1220 OE1
+ - GPRS -> SIM800L OE2
+ - RTC -> DS3231 OE5
+ - Módulo MicroSD Card OE6.
+
+Possibilidade:
+TTGO T-Call ESP32 with SIM800L
