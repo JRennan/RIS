@@ -1,4 +1,7 @@
+//ARQUIVO TESTE PARA as FUNÇÕES DO RTC.
+
 // comunicação I2C e para o RTC.
+
 #include <Wire.h>
 #include <RTClib.h>
 
