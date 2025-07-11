@@ -32,8 +32,7 @@ void setup() {
 }
 
 void loop() {
-  // ---- FUNÇÃO PRINCIPAL: Ler a hora atual ----
-  // Pega todas as informações de data e hora atuais do RTC e armazena no objeto "agora".
+  // FUNÇÃO: Ler a hora atual
   DateTime agora = rtc.now();
 
   // Imprime a data no formato DD/MM/AAAA
@@ -63,8 +62,7 @@ void loop() {
   Serial.print(agora.second());
   Serial.println();
   
-  // ---- FUNÇÃO PRINCIPAL: Ler a temperatura ----
-  // O DS3231 possui um sensor de temperatura integrado.
+  // sensor de temperatura integrado do DS3231.
   Serial.print("Temperatura: ");
   Serial.print(rtc.getTemperature());
   Serial.println(" C");
